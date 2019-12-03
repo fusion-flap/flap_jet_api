@@ -33,11 +33,23 @@ def getsignal(exp_id, source, no_data = False, options={}):
                        "no_t": 0,
                        "Only Info": 0,
                        "nwds": 0,
-                       "Check Time Equidistant": False}
+                       "Check Time Equidistant": False,
+                       "Cache Data": False}
     options = {**options_default, **options}
+    
+    #checking if the data is already in the cache
+    curr_path = os.path.dirname(os.path.abspath(__file__))
+    location = os.path.sep.join(curr_path.split(os.path.sep))
+    split_source = source.split("/")
+    filename = os.path.join(os.path.sep.join([location,"cached"]),
+                            ("_".join(split_source)+"-"+options["UID"]+\
+                            "-"+str(exp_id)+".hdf5").lower())
+    print(filename)
+    if os.path.exists(filename):
+        print("ok")
+        return flap.load(filename)
 
     # obtaining the data from the server
-    split_source = source.split("/")
     if split_source[0].upper() == "PPF":
         raw_ppf = \
                 ppf.ppfdata(exp_id,split_source[2],split_source[1],
@@ -97,15 +109,18 @@ def getsignal(exp_id, source, no_data = False, options={}):
         coordinates.append(x_coord)
     if options["Only Info"] == 0 and (len(data) != 0):
         unit = flap.Unit(name=source,unit=dunits)
-        data = flap.DataObject(data_array=data, data_unit=unit,
-                               coordinates=coordinates, exp_id=str(exp_id),
-                               data_title=desc, data_shape=data.shape,
-                               info=info)
+        signal = flap.DataObject(data_array=data, data_unit=unit,
+                                     coordinates=coordinates, exp_id=str(exp_id),
+                                     data_title=desc, data_shape=data.shape,
+                                     info=info)
         if "comm" in locals():
-            data.info = data.info+comm+"\n"
+            signal.info = signal.info+comm+"\n"
         if no_data is True:
-            data.data = None
-        return data
+            signal.data = None
+            
+        if options["Cache Data"] is True:
+            flap.save(signal, filename)
+        return signal
     else:
         # if one is only ineterested in the metadata
         return raw_ppf
@@ -129,18 +144,20 @@ def get_data(exp_id=None, data_name=None, no_data=False, options={}, coordinates
         Check Time Equidistant - if set and True, then the data is checked if it is equidistant in time.
                               it is assumed to be equidistant, if the difference between the timesteps relatively small
         nwds, fix0, reshape - Check jet ppf guide for info about these
+        Cache Data - if True, the data will be cached in a file to obtain later
     Output: DataObject for the data_name and exp_id
     """
     options_default = {
             "Sequence": 0,
-            "nwds": 0,
             "UID": "jetppf",
-            "fix0": 0,
-            "reshape": 0,
             "no_x": 0,
             "no_t": 0,
             "Only Info": 0,
-            "Check Time Equidistant": False}
+            "Check Time Equidistant": False,
+            "Cache Data": False,
+            "fix0": 0,
+            "reshape": 0,
+            "nwds": 0}
     options = {**options_default, **options}
     
     if options["UID"] == "curr_user":
