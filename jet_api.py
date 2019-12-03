@@ -44,9 +44,7 @@ def getsignal(exp_id, source, no_data = False, options={}):
     filename = os.path.join(os.path.sep.join([location,"cached"]),
                             ("_".join(split_source)+"-"+options["UID"]+\
                             "-"+str(exp_id)+".hdf5").lower())
-    print(filename)
     if os.path.exists(filename):
-        print("ok")
         return flap.load(filename)
 
     # obtaining the data from the server
