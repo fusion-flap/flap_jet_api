@@ -62,7 +62,7 @@ def getsignal(exp_id, source, no_data = False, options={}):
     if split_source[0].upper() == "PPF":
         for uid in uid_list:
             raw_ppf = \
-                    ppf.ppfdata(exp_id,split_source[2],split_source[1],
+                    ppf.ppfdata(exp_id,split_source[1],split_source[2],
                                 seq=options["Sequence"], uid=uid,
                                 fix0=options["fix0"], reshape=options["reshape"],
                                 no_x=options["no_x"], no_t=options["no_t"],
@@ -117,15 +117,16 @@ def getsignal(exp_id, source, no_data = False, options={}):
                                          dimension_list=[0])
         coordinates.append(time_coord)
     if options["no_x"] == 0 and (len(x) != 0):
-        if len(x)==1 and len(data)>1:
-            x = np.ones(len(data))*x
-        x_coord = flap.Coordinate(name='X', unit=xunits, values=x,
-                                     shape=x.shape,
-                                     mode=flap.CoordinateMode(equidistant=False),
-                                     dimension_list=[0])
-        coordinates.append(x_coord)
+        if len(x)>1:
+            x_coord = flap.Coordinate(name='X', unit=xunits, values=x,
+                                         shape=x.shape,
+                                         mode=flap.CoordinateMode(equidistant=False),
+                                         dimension_list=[1])
+            coordinates.append(x_coord)
     if options["Only Info"] == 0 and (len(data) != 0):
         unit = flap.Unit(name=source,unit=dunits)
+        if "x_coord" in locals():
+            data = data.reshape((len(t), len(x)))
         signal = flap.DataObject(data_array=data, data_unit=unit,
                                      coordinates=coordinates, exp_id=str(exp_id),
                                      data_title=desc, data_shape=data.shape,
