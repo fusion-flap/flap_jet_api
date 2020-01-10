@@ -198,6 +198,7 @@ def getsignal_sal(exp_id, source, no_data = False, options={}):
                       '<':'_in_',
                       ':':'_sq_',
                       '$':'_do_',
+                      ':':'_sq_',
                       '&':'_et_',
                       ' ':'_sp_'}
     node = split_source[2].lower()
@@ -229,6 +230,8 @@ def getsignal_sal(exp_id, source, no_data = False, options={}):
     elif not ("data" in locals()):
         raise ValueError("No data found with errors: \n"+error_string)
     # converting data to flap DataObject
+    # possible names for the time coordinate
+    time_names=['time', 't', 'jpf time vector', 'ppf time vector', 'time vector', 'the ppf t-vector.']
     coordinates = []
     data = data.reshape(raw_signal.shape)
     info = "Obtained at "+str(date.today())+", uid "+uid+"\n"
@@ -238,18 +241,20 @@ def getsignal_sal(exp_id, source, no_data = False, options={}):
         values = np.array(coord.data)
         unit = coord.units
         equidist = False
-        if name.lower()=='time' or name.lower()=='t' or coord.temporal is True:
-            tunit = ["secs", "s", "seconds"]
+        if name.lower() in time_names or coord.temporal is True:
+            tunit = ["secs", "s", "seconds", "second"]
             if unit.lower() in tunit:
                 unit = "Second"
+            name = 'Time'
             equidist = False
-            if options['Check Time Equidistant'] is True and (unit == "Second" or coord.temporal is True):
+            if options['Check Time Equidistant'] is True and (unit == "Second" or coord.temporal is True)\
+               and (len(values)==1 and values[0]==-1):
                 timesteps = np.array(values[1:])-np.array(values[0:-1])
                 equidistance = np.linalg.norm(timesteps-timesteps[0])/np.linalg.norm(timesteps)
                 if equidistance < 1e-6:
                     info = info + "Time variable is taken as equidistant to an accuracy of "+\
                            str(equidistance)+"\n"
-                    coord_object = flap.Coordinate(name='Time', unit=values, start = t[0],
+                    coord_object = flap.Coordinate(name=name, unit=values, start = values[0],
                                                    shape=values.shape, step=np.mean(timesteps),
                                                    mode=flap.CoordinateMode(equidistant=True),
                                                    dimension_list=[0])
